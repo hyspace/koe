@@ -1,6 +1,6 @@
 //! # koe-asr
 //!
-//! Streaming ASR (Automatic Speech Recognition) client for Volcengine/Doubao and Qwen.
+//! Streaming ASR (Automatic Speech Recognition) client for Volcengine/Doubao, Qwen, and OpenAI Realtime.
 //!
 //! ## Quick Start (Doubao)
 //!
@@ -42,12 +42,14 @@ pub mod config;
 pub mod doubao;
 pub mod error;
 pub mod event;
+pub mod openai_realtime;
 pub mod provider;
 pub mod qwen;
 pub mod transcript;
 
+pub use config::{AsrConfig, OpenAiRealtimeBackend};
+pub use openai_realtime::OpenAiRealtimeAsrProvider;
 pub use qwen::QwenAsrProvider;
-pub use config::AsrConfig;
 pub use doubao::DoubaoWsProvider;
 pub use error::AsrError;
 pub use event::AsrEvent;

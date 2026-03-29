@@ -21,7 +21,7 @@ pub struct Config {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AsrSection {
-    /// Which ASR provider to use: "doubao" (default), "qwen", future: "openai", etc.
+    /// Which ASR provider to use: "doubao" (default), "qwen", or "openai_realtime".
     #[serde(default = "default_asr_provider")]
     pub provider: String,
 
@@ -32,6 +32,10 @@ pub struct AsrSection {
     /// Qwen ASR configuration
     #[serde(default)]
     pub qwen: QwenAsrConfig,
+
+    /// OpenAI Realtime ASR configuration
+    #[serde(default)]
+    pub openai_realtime: OpenAiRealtimeAsrConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -57,6 +61,44 @@ impl Default for QwenAsrConfig {
             api_key: String::new(),
             model: default_qwen_model(),
             language: default_qwen_language(),
+            connect_timeout_ms: default_connect_timeout(),
+            final_wait_timeout_ms: default_final_wait_timeout(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct OpenAiRealtimeAsrConfig {
+    #[serde(default = "default_openai_realtime_backend")]
+    pub backend: String,
+    #[serde(default = "default_openai_realtime_url")]
+    pub url: String,
+    #[serde(default)]
+    pub api_key: String,
+    #[serde(default = "default_openai_realtime_model")]
+    pub model: String,
+    #[serde(default = "default_openai_realtime_transcription_model")]
+    pub transcription_model: String,
+    #[serde(default = "default_qwen_language")]
+    pub language: String,
+    #[serde(default)]
+    pub prompt: String,
+    #[serde(default = "default_connect_timeout")]
+    pub connect_timeout_ms: u64,
+    #[serde(default = "default_final_wait_timeout")]
+    pub final_wait_timeout_ms: u64,
+}
+
+impl Default for OpenAiRealtimeAsrConfig {
+    fn default() -> Self {
+        Self {
+            backend: default_openai_realtime_backend(),
+            url: default_openai_realtime_url(),
+            api_key: String::new(),
+            model: default_openai_realtime_model(),
+            transcription_model: default_openai_realtime_transcription_model(),
+            language: default_qwen_language(),
+            prompt: String::new(),
             connect_timeout_ms: default_connect_timeout(),
             final_wait_timeout_ms: default_final_wait_timeout(),
         }
@@ -279,6 +321,18 @@ fn default_asr_url() -> String {
 }
 fn default_resource_id() -> String {
     "volc.seedasr.sauc.duration".into()
+}
+fn default_openai_realtime_backend() -> String {
+    "openai".into()
+}
+fn default_openai_realtime_url() -> String {
+    "wss://api.openai.com/v1/realtime".into()
+}
+fn default_openai_realtime_model() -> String {
+    "gpt-realtime".into()
+}
+fn default_openai_realtime_transcription_model() -> String {
+    "gpt-4o-mini-transcribe".into()
 }
 fn default_connect_timeout() -> u64 {
     3000
@@ -668,7 +722,7 @@ const DEFAULT_CONFIG_YAML: &str = r#"# Koe - Voice Input Tool Configuration
 # ~/.koe/config.yaml
 
 asr:
-  # ASR provider: "doubao" (default)
+  # ASR provider: "doubao" | "qwen" | "openai_realtime"
   provider: "doubao"
 
   # Doubao (豆包) Streaming ASR 2.0 (优化版双向流式)
@@ -690,6 +744,20 @@ asr:
     api_key: ""
     model: "qwen3-asr-flash-realtime"
     language: "zh"
+    connect_timeout_ms: 3000
+    final_wait_timeout_ms: 5000
+
+  # OpenAI Realtime transcription
+  openai_realtime:
+    # "openai" uses Bearer auth against api.openai.com
+    # "azure_openai" uses api-key auth and treats model as deployment name
+    backend: "openai"
+    url: "wss://api.openai.com/v1/realtime"
+    api_key: ""
+    model: "gpt-realtime"
+    transcription_model: "gpt-4o-mini-transcribe"
+    language: "zh"
+    prompt: ""
     connect_timeout_ms: 3000
     final_wait_timeout_ms: 5000
 

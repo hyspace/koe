@@ -26,16 +26,16 @@ Koe takes a different approach:
 ## How It Works
 
 1. Press and hold the trigger key (default: **Fn**, configurable) — Koe starts listening
-2. Audio streams in real-time to a cloud ASR service (Doubao/豆包 by ByteDance)
+2. Audio streams in real-time to a cloud ASR service
 3. A floating status pill shows real-time interim recognition text as you speak
 4. The ASR transcript is corrected by an LLM (any OpenAI-compatible API) — fixing capitalization, punctuation, spacing, and terminology
 5. The corrected text is automatically pasted into the active input field
 
 Current provider support is intentionally narrow:
 
-- **ASR**: uses a provider-based config layout, but currently ships with **Doubao ASR only**
+- **ASR**: ships with **Doubao**, **Qwen Realtime ASR**, and **OpenAI Realtime transcription**
 - **LLM**: currently supports **OpenAI-compatible APIs only**
-- **Planned**: future ASR support may include the **OpenAI Transcriptions API**
+- **Planned**: future provider support may continue expanding under the same layout
 
 ## Installation
 
@@ -148,13 +148,15 @@ Below is the full configuration with explanations for every field.
 
 #### ASR (Speech Recognition)
 
-Koe now uses a provider-based ASR config layout. The only built-in provider is
-still **Doubao (豆包) ASR 2.0**, and future releases may add more providers such
-as the **OpenAI Transcriptions API**.
+Koe now uses a provider-based ASR config layout. Built-in providers currently include:
+
+- **Doubao (豆包) ASR 2.0**
+- **Qwen Realtime ASR**
+- **OpenAI Realtime transcription**
 
 ```yaml
 asr:
-  # ASR provider. Currently "doubao" is the only built-in option.
+  # ASR provider: "doubao" | "qwen" | "openai_realtime"
   provider: "doubao"
 
   doubao:
@@ -195,6 +197,37 @@ asr:
     # but significantly better accuracy, especially for technical terms.
     # Recommended: true.
     enable_nonstream: true
+
+  qwen:
+    url: "wss://dashscope.aliyuncs.com/api-ws/v1/realtime"
+    api_key: ""
+    model: "qwen3-asr-flash-realtime"
+    language: "zh"
+    connect_timeout_ms: 3000
+    final_wait_timeout_ms: 5000
+
+  openai_realtime:
+    # backend: "openai" or "azure_openai"
+    backend: "openai"
+
+    # OpenAI example:
+    # url: "wss://api.openai.com/v1/realtime"
+    #
+    # Azure example:
+    # url: "wss://<resource>.openai.azure.com/openai/v1/realtime"
+    # provider appends ?deployment=<model>&intent=transcription automatically
+    url: "wss://api.openai.com/v1/realtime"
+    api_key: ""
+
+    # For OpenAI, this is the realtime model name.
+    # For Azure OpenAI, this same field is the deployment name.
+    model: "gpt-realtime"
+
+    transcription_model: "gpt-4o-mini-transcribe"
+    language: "zh"
+    prompt: ""
+    connect_timeout_ms: 3000
+    final_wait_timeout_ms: 5000
 ```
 
 Older Koe versions stored Doubao fields directly under `asr:`. Current builds

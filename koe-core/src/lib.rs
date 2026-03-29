@@ -17,7 +17,10 @@ use crate::ffi::{
 use crate::llm::openai_compatible::{build_http_client, OpenAiCompatibleProvider};
 use crate::llm::{CorrectionRequest, LlmProvider};
 use crate::session::{Session, SessionState};
-use koe_asr::{AsrConfig, AsrEvent, AsrProvider, DoubaoWsProvider, QwenAsrProvider, TranscriptAggregator};
+use koe_asr::{
+    AsrConfig, AsrEvent, AsrProvider, DoubaoWsProvider, OpenAiRealtimeAsrProvider,
+    OpenAiRealtimeBackend, QwenAsrProvider, TranscriptAggregator,
+};
 use reqwest::Client;
 
 use std::ffi::c_char;
@@ -267,8 +270,39 @@ pub extern "C" fn sp_core_session_begin(context: SPSessionContext) -> i32 {
                 enable_nonstream: false,
                 hotwords: Vec::new(),
                 language: Some(qwen.language.clone()),
+                prompt: None,
+                openai_realtime_backend: None,
+                model: None,
+                transcription_model: None,
             };
             (config, "qwen".to_string())
+        }
+        "openai_realtime" => {
+            let openai = &cfg.asr.openai_realtime;
+            let backend = match openai.backend.as_str() {
+                "azure_openai" => OpenAiRealtimeBackend::AzureOpenAi,
+                _ => OpenAiRealtimeBackend::OpenAi,
+            };
+            let config = AsrConfig {
+                url: openai.url.clone(),
+                app_key: String::new(),
+                access_key: openai.api_key.clone(),
+                resource_id: String::new(),
+                sample_rate_hz: 16000,
+                connect_timeout_ms: openai.connect_timeout_ms,
+                final_wait_timeout_ms: openai.final_wait_timeout_ms,
+                enable_ddc: false,
+                enable_itn: false,
+                enable_punc: false,
+                enable_nonstream: false,
+                hotwords: Vec::new(),
+                language: Some(openai.language.clone()),
+                prompt: Some(openai.prompt.clone()),
+                openai_realtime_backend: Some(backend),
+                model: Some(openai.model.clone()),
+                transcription_model: Some(openai.transcription_model.clone()),
+            };
+            (config, "openai_realtime".to_string())
         }
         _ => {
             let doubao = &cfg.asr.doubao;
@@ -286,6 +320,10 @@ pub extern "C" fn sp_core_session_begin(context: SPSessionContext) -> i32 {
                 enable_nonstream: doubao.enable_nonstream,
                 hotwords: core.dictionary.clone(),
                 language: Some("zh".to_string()),
+                prompt: None,
+                openai_realtime_backend: None,
+                model: None,
+                transcription_model: None,
             };
             (config, "doubao".to_string())
         }
@@ -457,6 +495,7 @@ async fn run_session(
     log::info!("[{session_id}] Using ASR provider: {asr_provider}");
     let mut asr: Box<dyn AsrProvider> = match asr_provider.as_str() {
         "qwen" => Box::new(QwenAsrProvider::new()),
+        "openai_realtime" => Box::new(OpenAiRealtimeAsrProvider::new()),
         _ => Box::new(DoubaoWsProvider::new()),
     };
     if let Err(e) = asr.connect(&asr_config).await {

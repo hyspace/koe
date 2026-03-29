@@ -1,3 +1,9 @@
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OpenAiRealtimeBackend {
+    OpenAi,
+    AzureOpenAi,
+}
+
 /// Configuration for an ASR session.
 #[derive(Debug, Clone)]
 pub struct AsrConfig {
@@ -27,6 +33,14 @@ pub struct AsrConfig {
     pub hotwords: Vec<String>,
     /// Language code for ASR (e.g. "zh", "en") - used by Qwen ASR
     pub language: Option<String>,
+    /// Prompt text used by transcription-capable providers
+    pub prompt: Option<String>,
+    /// OpenAI Realtime backend selection
+    pub openai_realtime_backend: Option<OpenAiRealtimeBackend>,
+    /// OpenAI model name, or Azure deployment name
+    pub model: Option<String>,
+    /// OpenAI Realtime transcription model name
+    pub transcription_model: Option<String>,
 }
 
 impl Default for AsrConfig {
@@ -45,6 +59,10 @@ impl Default for AsrConfig {
             enable_nonstream: true,
             hotwords: Vec::new(),
             language: Some("zh".to_string()),
+            prompt: None,
+            openai_realtime_backend: None,
+            model: None,
+            transcription_model: None,
         }
     }
 }
